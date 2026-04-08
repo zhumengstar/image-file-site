@@ -24,20 +24,21 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage, limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB limit
 
 // 静态文件服务
 app.use('/uploads', express.static(uploadDir));
+app.use('/videos', express.static(uploadDir));
 app.use(express.static(__dirname));
 
-// 上传图片
-app.post('/upload', upload.single('image'), (req, res) => {
+// 上传图片/视频
+app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
   
-  const imageUrl = `http://localhost:3001/uploads/${req.file.filename}`;
-  res.json({ url: imageUrl, name: req.file.filename });
+  const url = `http://localhost:3001/uploads/${req.file.filename}`;
+  res.json({ url: url, name: req.file.filename, type: req.file.mimetype });
 });
 
 // 获取图片列表
@@ -47,11 +48,36 @@ app.get('/images', (req, res) => {
       return res.status(500).json({ error: 'Failed to read upload directory' });
     }
     
+    const getMimeType = (filename) => {
+      const ext = path.extname(filename).toLowerCase();
+      const videoExts = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.flv'];
+      const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+      
+      if (videoExts.includes(ext)) return 'video/' + ext.slice(1);
+      if (imageExts.includes(ext)) return 'image/' + ext.slice(1);
+      return 'application/octet-stream';
+    };
+    
     const images = files.map(file => ({
       name: file,
-      url: `http://localhost:3001/uploads/${file}`
+      url: `http://localhost:3001/uploads/${file}`,
+      type: getMimeType(file)
     }));
     res.json(images);
+  });
+});
+
+// 删除图片
+app.delete('/images/:filename', (req, res) => {
+  const filename = decodeURIComponent(req.params.filename);
+  const filePath = path.join(uploadDir, filename);
+  
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error('Delete error:', err);
+      return res.status(500).json({ error: 'Failed to delete file: ' + err.message });
+    }
+    res.json({ success: true });
   });
 });
 

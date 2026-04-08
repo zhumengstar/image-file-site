@@ -372,10 +372,133 @@
         transition: all 0.3s ease;
       }
       
-      .sidebar-image-item:hover img {
+      .sidebar-image-item:hover img,
+      .sidebar-image-item:hover video {
         transform: scale(1.05);
       }
-      
+
+      .video-thumbnail video {
+        pointer-events: none;
+      }
+
+      /* 视频播放图标 */
+      .video-play-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 48px;
+        height: 48px;
+        background-color: rgba(0, 0, 0, 0.6);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .sidebar-image-grid-item {
+        position: relative;
+      }
+
+      .sidebar-image-grid-item video + .video-play-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      /* 拖拽排序样式 */
+      .sidebar-image-item.dragging {
+        opacity: 0.4;
+        border: 2px dashed var(--primary-color);
+        background-color: rgba(100, 108, 255, 0.15);
+        transform: scale(0.98);
+      }
+
+      .sidebar-image-item.drag-over {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 20px rgba(97, 218, 251, 0.5);
+        transform: translateX(8px);
+      }
+
+      .drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        margin-right: 0.5rem;
+        cursor: grab;
+        color: rgba(255, 255, 255, 0.4);
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .drag-handle:hover {
+        color: var(--primary-color);
+        background-color: rgba(100, 108, 255, 0.15);
+      }
+
+      .sidebar-image-item.dragging .drag-handle {
+        cursor: grabbing;
+        color: var(--primary-color);
+      }
+
+      @media (prefers-color-scheme: light) {
+        .drag-handle {
+          color: rgba(0, 0, 0, 0.4);
+        }
+        .drag-handle:hover {
+          color: var(--primary-color);
+          background-color: rgba(100, 108, 255, 0.1);
+        }
+      }
+
+      /* 瀑布流拖拽样式 */
+      .sidebar-image-grid-item.dragging {
+        opacity: 0.4;
+        border: 2px dashed var(--primary-color);
+        transform: scale(0.95);
+      }
+
+      .sidebar-image-grid-item.drag-over {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 25px rgba(97, 218, 251, 0.6);
+        transform: translateY(-4px) scale(1.02);
+      }
+
+      .grid-drag-handle {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.4rem;
+        cursor: grab;
+        color: rgba(255, 255, 255, 0.8);
+        background-color: rgba(0, 0, 0, 0.4);
+        border-radius: 6px;
+        opacity: 0;
+        transition: all 0.2s ease;
+      }
+
+      .sidebar-image-grid-item:hover .grid-drag-handle {
+        opacity: 1;
+      }
+
+      .grid-drag-handle:hover {
+        background-color: rgba(100, 108, 255, 0.8);
+        color: white;
+      }
+
+      .sidebar-image-grid-item.dragging .grid-drag-handle {
+        opacity: 1;
+        cursor: grabbing;
+        background-color: var(--primary-color);
+      }
+
       .sidebar-image-item .item-content {
         flex: 1;
         margin-right: 0.5rem;
@@ -495,6 +618,42 @@
         display: flex;
         gap: 0.3rem;
         align-items: center;
+      }
+
+      /* 瀑布流删除按钮始终显示 */
+      .sidebar-image-grid-item .delete-button,
+      .sidebar-image-grid-item .grid-item-actions .copy-button {
+        opacity: 1;
+      }
+
+      /* 删除按钮样式 */
+      .delete-button {
+        font-size: 0.65rem;
+        padding: 0.25em 0.5em;
+        transition: all 0.3s ease;
+        border-radius: 6px;
+        background-color: rgba(244, 67, 54, 0.15);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        color: var(--error-color);
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .delete-button:hover {
+        background-color: rgba(244, 67, 54, 0.3);
+        border-color: var(--error-color);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+      }
+
+      @media (prefers-color-scheme: light) {
+        .delete-button {
+          background-color: rgba(244, 67, 54, 0.1);
+          border-color: rgba(244, 67, 54, 0.3);
+        }
+        .delete-button:hover {
+          background-color: rgba(244, 67, 54, 0.2);
+        }
       }
       
       /* 动画效果 */
@@ -661,12 +820,14 @@
         const [showPreview, setShowPreview] = useState(false);
         const [previewImage, setPreviewImage] = useState('');
         const [viewMode, setViewMode] = useState('list'); // 'list' 或 'grid'
+        const [draggedIndex, setDraggedIndex] = useState(null);
+        const [dragOverIndex, setDragOverIndex] = useState(null);
         const fileInputRef = useRef(null);
 
         // 从服务器加载图片
         const loadImages = async () => {
           try {
-            const response = await fetch('http://localhost:8000/images');
+            const response = await fetch('http://localhost:3001/images');
             if (!response.ok) {
               throw new Error('Failed to fetch images');
             }
@@ -684,15 +845,55 @@
           loadImages();
         }, []);
 
-        // 处理图片上传
+        // 拖拽排序处理函数
+        const handleDragStart = (index) => {
+          setDraggedIndex(index);
+        };
+
+        const handleDragOverItem = (e, index) => {
+          e.preventDefault();
+          if (draggedIndex !== null && draggedIndex !== index) {
+            setDragOverIndex(index);
+          }
+        };
+
+        const handleDropItem = (e, dropIndex) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          if (draggedIndex !== null && draggedIndex !== dropIndex) {
+            const newImages = [...images];
+            const [draggedItem] = newImages.splice(draggedIndex, 1);
+            newImages.splice(dropIndex, 0, draggedItem);
+            setImages(newImages);
+            showMessage('图片排序已更新！', 'success');
+          }
+          
+          setDraggedIndex(null);
+          setDragOverIndex(null);
+        };
+
+        const handleDragEnd = () => {
+          setDraggedIndex(null);
+          setDragOverIndex(null);
+        };
+
+        const handleDragLeaveItem = (e) => {
+          // 只有当离开当前元素时才清除 dragOverIndex
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            setDragOverIndex(null);
+          }
+        };
+
+        // 处理图片/视频上传
         const handleUpload = async (files) => {
           Array.from(files).forEach(async (file) => {
-            if (file.type.startsWith('image/')) {
+            if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
               const formData = new FormData();
-              formData.append('image', file);
+              formData.append('file', file);
               
               try {
-                const response = await fetch('http://localhost:8000/upload', {
+                const response = await fetch('http://localhost:3001/upload', {
                   method: 'POST',
                   body: formData
                 });
@@ -704,7 +905,7 @@
                 const data = await response.json();
                 console.log('Uploaded image:', data);
                 setImages(prev => [...prev, data]);
-                showMessage('图片上传成功！', 'success');
+                showMessage('上传成功！', 'success');
               } catch (error) {
                 console.error('Upload failed:', error);
                 showMessage('上传失败，请重试！', 'error');
@@ -791,8 +992,8 @@
         };
 
         // 处理图片点击，显示大图预览
-        const handleImageClick = (imageUrl) => {
-          setPreviewImage(imageUrl);
+        const handleImageClick = (image) => {
+          setPreviewImage(image);
           setShowPreview(true);
         };
 
@@ -800,6 +1001,28 @@
         const closePreview = () => {
           setShowPreview(false);
           setPreviewImage('');
+        };
+
+        // 删除图片
+        const handleDeleteImage = async (e, imageName) => {
+          e.stopPropagation();
+          
+          try {
+            const encodedName = encodeURIComponent(imageName);
+            const response = await fetch(`http://localhost:3001/images/${encodedName}`, {
+              method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+              throw new Error('删除失败');
+            }
+            
+            setImages(prev => prev.filter(img => img.name !== imageName));
+            showMessage('已删除！', 'success');
+          } catch (error) {
+            console.error('Delete failed:', error);
+            showMessage('删除失败，请重试！', 'error');
+          }
         };
 
         return React.createElement('div', { id: 'root' },
@@ -811,7 +1034,7 @@
           // 侧边栏图片列表
           React.createElement('div', { className: 'sidebar' },
             React.createElement('div', { className: 'sidebar-header' },
-              React.createElement('h2', { style: { fontSize: '1.2rem', margin: '0' } }, '图片列表'),
+              React.createElement('h2', { style: { fontSize: '1.2rem', margin: '0' } }, '多媒体列表'),
               React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginTop: '1rem' } },
                 React.createElement('button', {
                   className: `view-button ${viewMode === 'list' ? 'active' : ''}`,
@@ -828,15 +1051,64 @@
                 React.createElement('p', { style: { fontSize: '0.9rem', color: '#888' } }, '暂无图片')
               ) : viewMode === 'list' ? (
                 React.createElement('div', { className: 'sidebar-image-list' },
-                  images.map((image) => React.createElement('div', {
+                  images.map((image, index) => React.createElement('div', {
                     key: image.name,
-                    className: 'sidebar-image-item',
-                    onClick: () => handleImageClick(image.url)
+                    className: `sidebar-image-item ${draggedIndex === index ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`,
+                    draggable: true,
+                    onClick: () => handleImageClick(image),
+                    onDragStart: (e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      handleDragStart(index);
+                    },
+                    onDragOver: (e) => handleDragOverItem(e, index),
+                    onDrop: (e) => handleDropItem(e, index),
+                    onDragEnd: handleDragEnd,
+                    onDragLeave: handleDragLeaveItem
                   },
-                    React.createElement('img', {
-                      src: image.url,
-                      alt: image.name
-                    }),
+                    image.type && image.type.startsWith('video/') ? (
+                      React.createElement('div', { style: { position: 'relative', marginRight: '1rem' } },
+                        React.createElement('video', {
+                          src: image.url,
+                          style: { 
+                            width: '64px', 
+                            height: '64px', 
+                            objectFit: 'cover',
+                            borderRadius: '8px'
+                          },
+                          muted: true,
+                          preload: 'metadata'
+                        }),
+                        React.createElement('div', { 
+                          style: {
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '24px',
+                            height: '24px',
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }
+                        },
+                          React.createElement('svg', {
+                            width: '12',
+                            height: '12',
+                            viewBox: '0 0 24 24',
+                            fill: 'white'
+                          },
+                            React.createElement('path', { d: 'M8 5v14l11-7z' })
+                          )
+                        )
+                      )
+                    ) : (
+                      React.createElement('img', {
+                        src: image.url,
+                        alt: image.name
+                      })
+                    ),
                     React.createElement('div', { className: 'item-content' },
                       React.createElement('div', { className: 'item-title', title: image.name }, image.name.substring(0, 20) + (image.name.length > 20 ? '...' : '')),
                       React.createElement('div', { className: 'item-actions' },
@@ -853,42 +1125,91 @@
                             e.stopPropagation();
                             copyImageUrl(getMarkdownLink(image.url));
                           }
-                        }, 'Markdown')
+                        }, 'Markdown'),
+                        React.createElement('button', {
+                          className: 'delete-button',
+                          onClick: (e) => handleDeleteImage(e, image.name)
+                        }, '删除')
                       )
                     )
                   ))
                 )
               ) : (
                 React.createElement('div', { className: 'sidebar-image-grid' },
-                  images.map((image) => React.createElement('div', {
-                    key: image.name,
-                    className: 'sidebar-image-grid-item',
-                    onClick: () => handleImageClick(image.url)
-                  },
-                    React.createElement('img', {
-                      src: image.url,
-                      alt: image.name
-                    }),
-                    React.createElement('div', { className: 'grid-item-overlay' },
-                      React.createElement('p', { title: image.name }, image.name.substring(0, 15) + (image.name.length > 15 ? '...' : '')),
-                      React.createElement('div', { className: 'grid-item-actions' },
-                        React.createElement('button', {
-                          className: 'copy-button',
-                          onClick: (e) => {
-                            e.stopPropagation();
-                            copyImageUrl(image.url);
-                          }
-                        }, '复制链接'),
-                        React.createElement('button', {
-                          className: 'copy-button',
-                          onClick: (e) => {
-                            e.stopPropagation();
-                            copyImageUrl(getMarkdownLink(image.url));
-                          }
-                        }, 'Markdown')
+                  images.map((image, index) => 
+                    image.type && image.type.startsWith('video/') ? (
+                      React.createElement('div', {
+                        key: image.name,
+                        className: `sidebar-image-grid-item ${draggedIndex === index ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`,
+                        draggable: true,
+                        onClick: () => handleImageClick(image),
+                        onDragStart: (e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          handleDragStart(index);
+                        },
+                        onDragOver: (e) => handleDragOverItem(e, index),
+                        onDrop: (e) => handleDropItem(e, index),
+                        onDragEnd: handleDragEnd,
+                        onDragLeave: handleDragLeaveItem
+                      },
+                        React.createElement('video', {
+                          src: image.url,
+                          style: { width: '100%', height: '128px', objectFit: 'cover' },
+                          muted: true,
+                          preload: 'metadata'
+                        }),
+                        React.createElement('div', { className: 'video-play-icon' },
+                          React.createElement('svg', {
+                            width: '32',
+                            height: '32',
+                            viewBox: '0 0 24 24',
+                            fill: 'white'
+                          },
+                            React.createElement('path', { d: 'M8 5v14l11-7z' })
+                          )
+                        )
+                      )
+                    ) : (
+                      React.createElement('div', {
+                        key: image.name,
+                        className: `sidebar-image-grid-item ${draggedIndex === index ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`,
+                        draggable: true,
+                        onClick: () => handleImageClick(image),
+                        onDragStart: (e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          handleDragStart(index);
+                        },
+                        onDragOver: (e) => handleDragOverItem(e, index),
+                        onDrop: (e) => handleDropItem(e, index),
+                        onDragEnd: handleDragEnd,
+                        onDragLeave: handleDragLeaveItem
+                      },
+                        React.createElement('img', {
+                          src: image.url,
+                          alt: image.name
+                        }),
+                        React.createElement('div', { className: 'grid-item-overlay' },
+                          React.createElement('p', { title: image.name }, image.name.substring(0, 15) + (image.name.length > 15 ? '...' : '')),
+                          React.createElement('div', { className: 'grid-item-actions' },
+                            React.createElement('button', {
+                              className: 'copy-button',
+                              onClick: (e) => {
+                                e.stopPropagation();
+                                copyImageUrl(image.url);
+                              }
+                            }, '复制链接'),
+                            React.createElement('button', {
+                              className: 'copy-button',
+                              onClick: (e) => {
+                                e.stopPropagation();
+                                copyImageUrl(getMarkdownLink(image.url));
+                              }
+                            }, 'Markdown')
+                          )
+                        )
                       )
                     )
-                  ))
+                  )
                 )
               )
             )
@@ -896,14 +1217,14 @@
           
           // 主内容区
           React.createElement('div', { className: 'main-content' },
-            React.createElement('h1', null, '图床网站'),
-            React.createElement('p', null, '支持拖拽、点击或粘贴上传图片'),
+            React.createElement('h1', null, '多媒体网站'),
+            React.createElement('p', null, '支持拖拽、点击或粘贴上传图片和视频'),
             
             React.createElement('input', {
               ref: fileInputRef,
               type: 'file',
               multiple: true,
-              accept: 'image/*',
+              accept: 'image/*,video/*',
               onChange: handleFileChange,
               style: { display: 'none' }
             }),
@@ -921,13 +1242,13 @@
 
             React.createElement('h2', null, '上传状态'),
             images.length === 0 ? (
-              React.createElement('p', null, '暂无图片，请上传图片')
+              React.createElement('p', null, '暂无文件，请上传图片或视频')
             ) : (
-              React.createElement('p', null, `已上传 ${images.length} 张图片`)
+              React.createElement('p', null, `已上传 ${images.filter(i => !i.type || !i.type.startsWith('video/')).length} 张图片，${images.filter(i => i.type && i.type.startsWith('video/')).length} 个视频`)
             )
           ),
 
-          // 大图预览
+          // 大图/视频预览
           showPreview && React.createElement('div', {
             className: 'image-preview',
             onClick: closePreview
@@ -936,10 +1257,19 @@
               className: 'image-preview-content',
               onClick: (e) => e.stopPropagation()
             },
-              React.createElement('img', {
-                src: previewImage,
-                alt: '预览图片'
-              })
+              previewImage && previewImage.type && previewImage.type.startsWith('video/') ? (
+                React.createElement('video', {
+                  src: previewImage.url,
+                  controls: true,
+                  autoPlay: true,
+                  style: { maxWidth: '90vw', maxHeight: '80vh' }
+                })
+              ) : (
+                React.createElement('img', {
+                  src: previewImage.url || previewImage,
+                  alt: '预览'
+                })
+              )
             )
           )
         );
