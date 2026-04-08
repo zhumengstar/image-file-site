@@ -20,7 +20,8 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    const prefix = file.mimetype.startsWith('video/') ? 'video' : 'image';
+    cb(null, prefix + '-' + uniqueSuffix + ext);
   }
 });
 

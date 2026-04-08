@@ -551,9 +551,15 @@
       /* 瀑布流视图 */
       .sidebar-image-grid {
         margin-top: 1.5rem;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-        gap: 1.2rem;
+        columns: 2;
+        column-gap: 0.5rem;
+      }
+
+      .sidebar-image-grid > div {
+        break-inside: avoid;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+        width: 100%;
       }
       
       .sidebar-image-grid-item {
@@ -576,8 +582,7 @@
       
       .sidebar-image-grid-item img {
         width: 100%;
-        height: 128px;
-        object-fit: cover;
+        height: auto;
         display: block;
         border-radius: 0;
         margin-right: 0;
@@ -822,7 +827,52 @@
         const [viewMode, setViewMode] = useState('list'); // 'list' 或 'grid'
         const [draggedIndex, setDraggedIndex] = useState(null);
         const [dragOverIndex, setDragOverIndex] = useState(null);
+        const [gridDragOverIndex, setGridDragOverIndex] = useState(null);
         const fileInputRef = useRef(null);
+        const gridContainerRef = useRef(null);
+
+        // 瀑布流拖拽开始
+        const handleGridDragStart = (e, index) => {
+          setDraggedIndex(index);
+          e.dataTransfer.effectAllowed = 'move';
+          // 保存起始位置信息
+          e.dataTransfer.setData('text/plain', JSON.stringify({
+            index,
+            startX: e.clientX,
+            startY: e.clientY
+          }));
+        };
+
+        // 瀑布流拖拽悬停
+        const handleGridDragOver = (e, index) => {
+          e.preventDefault();
+          if (draggedIndex !== null && draggedIndex !== index) {
+            setGridDragOverIndex(index);
+          }
+        };
+
+        // 瀑布流放置
+        const handleGridDrop = (e, dropIndex) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          if (draggedIndex !== null && draggedIndex !== dropIndex) {
+            const newImages = [...images];
+            const [draggedItem] = newImages.splice(draggedIndex, 1);
+            newImages.splice(dropIndex, 0, draggedItem);
+            setImages(newImages);
+            showMessage('排序已更新！', 'success');
+          }
+          
+          setDraggedIndex(null);
+          setGridDragOverIndex(null);
+        };
+
+        // 瀑布流拖拽结束
+        const handleGridDragEnd = () => {
+          setDraggedIndex(null);
+          setGridDragOverIndex(null);
+        };
 
         // 从服务器加载图片
         const loadImages = async () => {
@@ -1135,26 +1185,22 @@
                   ))
                 )
               ) : (
-                React.createElement('div', { className: 'sidebar-image-grid' },
+                React.createElement('div', { className: 'sidebar-image-grid', ref: gridContainerRef },
                   images.map((image, index) => 
                     image.type && image.type.startsWith('video/') ? (
                       React.createElement('div', {
                         key: image.name,
-                        className: `sidebar-image-grid-item ${draggedIndex === index ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`,
+                        className: `sidebar-image-grid-item ${draggedIndex === index ? 'dragging' : ''} ${gridDragOverIndex === index ? 'drag-over' : ''}`,
                         draggable: true,
                         onClick: () => handleImageClick(image),
-                        onDragStart: (e) => {
-                          e.dataTransfer.effectAllowed = 'move';
-                          handleDragStart(index);
-                        },
-                        onDragOver: (e) => handleDragOverItem(e, index),
-                        onDrop: (e) => handleDropItem(e, index),
-                        onDragEnd: handleDragEnd,
-                        onDragLeave: handleDragLeaveItem
+                        onDragStart: (e) => handleGridDragStart(e, index),
+                        onDragOver: (e) => handleGridDragOver(e, index),
+                        onDrop: (e) => handleGridDrop(e, index),
+                        onDragEnd: handleGridDragEnd
                       },
                         React.createElement('video', {
                           src: image.url,
-                          style: { width: '100%', height: '128px', objectFit: 'cover' },
+                          style: { width: '100%', height: 'auto', objectFit: 'cover', display: 'block' },
                           muted: true,
                           preload: 'metadata'
                         }),
@@ -1172,17 +1218,13 @@
                     ) : (
                       React.createElement('div', {
                         key: image.name,
-                        className: `sidebar-image-grid-item ${draggedIndex === index ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`,
+                        className: `sidebar-image-grid-item ${draggedIndex === index ? 'dragging' : ''} ${gridDragOverIndex === index ? 'drag-over' : ''}`,
                         draggable: true,
                         onClick: () => handleImageClick(image),
-                        onDragStart: (e) => {
-                          e.dataTransfer.effectAllowed = 'move';
-                          handleDragStart(index);
-                        },
-                        onDragOver: (e) => handleDragOverItem(e, index),
-                        onDrop: (e) => handleDropItem(e, index),
-                        onDragEnd: handleDragEnd,
-                        onDragLeave: handleDragLeaveItem
+                        onDragStart: (e) => handleGridDragStart(e, index),
+                        onDragOver: (e) => handleGridDragOver(e, index),
+                        onDrop: (e) => handleGridDrop(e, index),
+                        onDragEnd: handleGridDragEnd
                       },
                         React.createElement('img', {
                           src: image.url,
