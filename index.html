@@ -27,8 +27,6 @@
         --background-color: #121212;
         --card-background: rgba(255, 255, 255, 0.05);
         --border-color: rgba(255, 255, 255, 0.1);
-        --text-color: rgba(255, 255, 255, 0.9);
-        --sidebar-background: rgba(255, 255, 255, 0.02);
       }
       
       a {
@@ -97,15 +95,13 @@
           color: #213547;
           background-color: #ffffff;
           --primary-color: #646cff;
-        --primary-hover: #535bf2;
-        --secondary-color: #61dafb;
-        --success-color: #4caf50;
-        --error-color: #f44336;
-        --background-color: #ffffff;
-        --card-background: rgba(0, 0, 0, 0.05);
-        --border-color: rgba(0, 0, 0, 0.1);
-        --text-color: #213547;
-        --sidebar-background: rgba(0, 0, 0, 0.02);
+          --primary-hover: #535bf2;
+          --secondary-color: #61dafb;
+          --success-color: #4caf50;
+          --error-color: #f44336;
+          --background-color: #ffffff;
+          --card-background: rgba(0, 0, 0, 0.05);
+          --border-color: rgba(0, 0, 0, 0.1);
         }
         
         body {
@@ -354,29 +350,6 @@
         color: rgba(255, 255, 255, 0.8);
       }
 
-      /* 导航按钮 */
-      .nav-button {
-        padding: 0.3rem 0.6rem;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background: var(--card-background);
-        color: var(--text-color);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-      
-      .nav-button:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: var(--primary-color);
-      }
-      
-      .nav-button.active {
-        background: var(--primary-color);
-        border-color: var(--primary-color);
-        color: white;
-      }
-
       /* 视图切换按钮 */
       .view-button {
         padding: 0.3rem 0.6rem;
@@ -449,32 +422,6 @@
       
       .sidebar-image-grid-item:hover .grid-item-overlay {
         transform: translateY(0);
-      }
-
-      /* 文件列表样式 */
-      .sidebar-file-list {
-        margin-top: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.8rem;
-      }
-      
-      .sidebar-file-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        border-radius: 10px;
-        background-color: var(--card-background);
-        border: 1px solid var(--border-color);
-        backdrop-filter: blur(5px);
-        transition: all 0.3s ease;
-      }
-      
-      .sidebar-file-item:hover {
-        background-color: rgba(100, 108, 255, 0.1);
-        border-color: var(--primary-color);
-        transform: translateX(6px);
-        box-shadow: 0 4px 12px rgba(100, 108, 255, 0.2);
       }
       
       /* 动画效果 */
@@ -567,8 +514,6 @@
         const [showPreview, setShowPreview] = useState(false);
         const [previewImage, setPreviewImage] = useState('');
         const [viewMode, setViewMode] = useState('list'); // 'list' 或 'grid'
-        const [currentPage, setCurrentPage] = useState('image'); // 'image' 或 'file'
-        const [files, setFiles] = useState([]);
         const fileInputRef = useRef(null);
 
         // 从服务器加载图片
@@ -587,64 +532,36 @@
           }
         };
 
-        // 从服务器加载文件
-        const loadFiles = async () => {
-          try {
-            const response = await fetch('http://localhost:8000/files');
-            if (!response.ok) {
-              throw new Error('Failed to fetch files');
-            }
-            const data = await response.json();
-            console.log('Loaded files:', data);
-            setFiles(data);
-          } catch (error) {
-            console.error('Failed to load files:', error);
-            showMessage('加载文件失败，请刷新页面重试！', 'error');
-          }
-        };
-
-        // 初始化加载数据
+        // 初始化加载图片
         useEffect(() => {
-          if (currentPage === 'image') {
-            loadImages();
-          } else {
-            loadFiles();
-          }
-        }, [currentPage]);
+          loadImages();
+        }, []);
 
-        // 处理文件上传
-        const handleUpload = async (uploadFiles) => {
-          Array.from(uploadFiles).forEach(async (file) => {
-            const formData = new FormData();
+        // 处理图片上传
+        const handleUpload = async (files) => {
+          Array.from(files).forEach(async (file) => {
             if (file.type.startsWith('image/')) {
+              const formData = new FormData();
               formData.append('image', file);
-            } else {
-              formData.append('file', file);
-            }
-            
-            try {
-              const response = await fetch('http://localhost:8000/upload', {
-                method: 'POST',
-                body: formData
-              });
               
-              if (!response.ok) {
-                throw new Error('上传失败');
-              }
-              
-              const data = await response.json();
-              console.log('Uploaded file:', data);
-              
-              if (file.type.startsWith('image/')) {
+              try {
+                const response = await fetch('http://localhost:8000/upload', {
+                  method: 'POST',
+                  body: formData
+                });
+                
+                if (!response.ok) {
+                  throw new Error('上传失败');
+                }
+                
+                const data = await response.json();
+                console.log('Uploaded image:', data);
                 setImages(prev => [...prev, data]);
                 showMessage('图片上传成功！', 'success');
-              } else {
-                setFiles(prev => [...prev, data]);
-                showMessage('文件上传成功！', 'success');
+              } catch (error) {
+                console.error('Upload failed:', error);
+                showMessage('上传失败，请重试！', 'error');
               }
-            } catch (error) {
-              console.error('Upload failed:', error);
-              showMessage('上传失败，请重试！', 'error');
             }
           });
         };
@@ -736,50 +653,6 @@
           setPreviewImage('');
         };
 
-        // 获取文件图标
-        const getFileIcon = (filename) => {
-          const extension = filename.split('.').pop().toLowerCase();
-          switch (extension) {
-            case 'pdf': return '📄';
-            case 'doc':
-            case 'docx': return '📃';
-            case 'xls':
-            case 'xlsx': return '📊';
-            case 'ppt':
-            case 'pptx': return '📺';
-            case 'txt': return '📝';
-            case 'zip':
-            case 'rar':
-            case '7z': return '📦';
-            case 'mp3':
-            case 'wav':
-            case 'ogg': return '🎵';
-            case 'mp4':
-            case 'avi':
-            case 'mov': return '🎬';
-            case 'exe': return '⚙️';
-            case 'js':
-            case 'jsx':
-            case 'ts':
-            case 'tsx': return '💻';
-            case 'html':
-            case 'css': return '🌐';
-            default: return '📄';
-          }
-        };
-
-        // 格式化文件大小
-        const formatFileSize = (size) => {
-          if (size === undefined || size === null) return '0 B';
-          const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-          let i = 0;
-          while (size >= 1024 && i < units.length - 1) {
-            size /= 1024;
-            i++;
-          }
-          return `${size.toFixed(2)} ${units[i]}`;
-        };
-
         return React.createElement('div', { style: { display: 'flex', width: '100vw', minHeight: '100vh' } },
           // 消息提示
           message && React.createElement('div', {
@@ -789,18 +662,8 @@
           // 侧边栏图片列表
           React.createElement('div', { className: 'sidebar' },
             React.createElement('div', { className: 'sidebar-header' },
-              React.createElement('h2', { style: { fontSize: '1.2rem', margin: '0' } }, currentPage === 'image' ? '图片列表' : '文件管理'),
+              React.createElement('h2', { style: { fontSize: '1.2rem', margin: '0' } }, '图片列表'),
               React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginTop: '1rem' } },
-                React.createElement('button', {
-                  className: `nav-button ${currentPage === 'image' ? 'active' : ''}`,
-                  onClick: () => setCurrentPage('image')
-                }, '图片'),
-                React.createElement('button', {
-                  className: `nav-button ${currentPage === 'file' ? 'active' : ''}`,
-                  onClick: () => setCurrentPage('file')
-                }, '文件')
-              ),
-              currentPage === 'image' && React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginTop: '1rem' } },
                 React.createElement('button', {
                   className: `view-button ${viewMode === 'list' ? 'active' : ''}`,
                   onClick: () => setViewMode('list')
@@ -812,111 +675,77 @@
               )
             ),
             React.createElement('div', { className: 'sidebar-content' },
-              currentPage === 'image' ? (
-                images.length === 0 ? (
-                  React.createElement('p', { style: { fontSize: '0.9rem', color: '#888' } }, '暂无图片')
-                ) : viewMode === 'list' ? (
-                  React.createElement('div', { className: 'sidebar-image-list' },
-                    images.map((image) => React.createElement('div', {
-                      key: image.name,
-                      className: 'sidebar-image-item',
-                      style: { cursor: 'pointer' },
-                      onClick: () => handleImageClick(image.url)
-                    },
-                      React.createElement('img', {
-                        src: image.url,
-                        alt: image.name,
-                        style: { cursor: 'pointer' }
-                      }),
-                      React.createElement('div', { style: { flex: 1, marginRight: '0.5rem' } },
-                        React.createElement('p', { style: { margin: '0', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }, title: image.name }, image.name.substring(0, 20) + (image.name.length > 20 ? '...' : '')),
-                        React.createElement('div', { style: { display: 'flex', gap: '0.3rem', marginTop: '0.3rem' } },
-                          React.createElement('button', {
-                            className: 'copy-button',
-                            onClick: (e) => {
-                              e.stopPropagation();
-                              copyImageUrl(image.url);
-                            },
-                            style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
-                          }, '复制链接'),
-                          React.createElement('button', {
-                            className: 'copy-button',
-                            onClick: (e) => {
-                              e.stopPropagation();
-                              copyImageUrl(getMarkdownLink(image.url));
-                            },
-                            style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
-                          }, 'Markdown')
-                        )
-                      )
-                    ))
-                  )
-                ) : (
-                  React.createElement('div', { className: 'sidebar-image-grid' },
-                    images.map((image) => React.createElement('div', {
-                      key: image.name,
-                      className: 'sidebar-image-grid-item',
-                      onClick: () => handleImageClick(image.url)
-                    },
-                      React.createElement('img', {
-                        src: image.url,
-                        alt: image.name
-                      }),
-                      React.createElement('div', { className: 'grid-item-overlay' },
-                        React.createElement('p', { style: { margin: '0', fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, title: image.name }, image.name.substring(0, 15) + (image.name.length > 15 ? '...' : '')),
-                        React.createElement('div', { style: { display: 'flex', gap: '0.3rem', marginTop: '0.3rem' } },
-                          React.createElement('button', {
-                            className: 'copy-button',
-                            onClick: (e) => {
-                              e.stopPropagation();
-                              copyImageUrl(image.url);
-                            },
-                            style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
-                          }, '复制链接'),
-                          React.createElement('button', {
-                            className: 'copy-button',
-                            onClick: (e) => {
-                              e.stopPropagation();
-                              copyImageUrl(getMarkdownLink(image.url));
-                            },
-                            style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
-                          }, 'Markdown')
-                        )
-                      )
-                    ))
-                  )
-                )
-              ) : (
-                files.length === 0 ? (
-                  React.createElement('p', { style: { fontSize: '0.9rem', color: '#888' } }, '暂无文件')
-                ) : (
-                  React.createElement('div', { className: 'sidebar-file-list' },
-                    files.map((file) => React.createElement('div', {
-                      key: file.name,
-                      className: 'sidebar-file-item'
-                    },
-                      React.createElement('div', { style: { width: '60px', height: '60px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginRight: '1rem', backgroundColor: 'var(--card-background)', borderRadius: '8px', border: '1px solid var(--border-color)' },
-                        React.createElement('span', { style: { fontSize: '2rem' } }, getFileIcon(file.name))
-                      ),
-                      React.createElement('div', { style: { flex: 1, marginRight: '0.5rem' } },
-                        React.createElement('p', { style: { margin: '0', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }, title: file.name }, file.name.substring(0, 20) + (file.name.length > 20 ? '...' : '')),
-                        React.createElement('p', { style: { margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-color)' } }, formatFileSize(file.size))
-                      ),
-                      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '0.3rem' } },
+              images.length === 0 ? (
+                React.createElement('p', { style: { fontSize: '0.9rem', color: '#888' } }, '暂无图片')
+              ) : viewMode === 'list' ? (
+                React.createElement('div', { className: 'sidebar-image-list' },
+                  images.map((image) => React.createElement('div', {
+                    key: image.name,
+                    className: 'sidebar-image-item',
+                    style: { cursor: 'pointer' },
+                    onClick: () => handleImageClick(image.url)
+                  },
+                    React.createElement('img', {
+                      src: image.url,
+                      alt: image.name,
+                      style: { cursor: 'pointer' }
+                    }),
+                    React.createElement('div', { style: { flex: 1, marginRight: '0.5rem' } },
+                      React.createElement('p', { style: { margin: '0', fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }, title: image.name }, image.name.substring(0, 20) + (image.name.length > 20 ? '...' : '')),
+                      React.createElement('div', { style: { display: 'flex', gap: '0.3rem', marginTop: '0.3rem' } },
                         React.createElement('button', {
                           className: 'copy-button',
-                          onClick: () => copyImageUrl(file.url),
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            copyImageUrl(image.url);
+                          },
                           style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
                         }, '复制链接'),
-                        React.createElement('a', {
-                          href: file.url,
-                          target: '_blank',
-                          rel: 'noopener noreferrer',
-                          style: { fontSize: '0.7rem', padding: '0.2em 0.4em', border: '1px solid var(--border-color)', borderRadius: '4px', textDecoration: 'none', color: 'var(--text-color)', textAlign: 'center', display: 'block' }
-                        }, '下载')
+                        React.createElement('button', {
+                          className: 'copy-button',
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            copyImageUrl(getMarkdownLink(image.url));
+                          },
+                          style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
+                        }, 'Markdown')
                       )
-                    ))
-                  )
+                    )
+                  ))
+                )
+              ) : (
+                React.createElement('div', { className: 'sidebar-image-grid' },
+                  images.map((image) => React.createElement('div', {
+                    key: image.name,
+                    className: 'sidebar-image-grid-item',
+                    onClick: () => handleImageClick(image.url)
+                  },
+                    React.createElement('img', {
+                      src: image.url,
+                      alt: image.name
+                    }),
+                    React.createElement('div', { className: 'grid-item-overlay' },
+                      React.createElement('p', { style: { margin: '0', fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, title: image.name }, image.name.substring(0, 15) + (image.name.length > 15 ? '...' : '')),
+                      React.createElement('div', { style: { display: 'flex', gap: '0.3rem', marginTop: '0.3rem' } },
+                        React.createElement('button', {
+                          className: 'copy-button',
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            copyImageUrl(image.url);
+                          },
+                          style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
+                        }, '复制链接'),
+                        React.createElement('button', {
+                          className: 'copy-button',
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            copyImageUrl(getMarkdownLink(image.url));
+                          },
+                          style: { fontSize: '0.7rem', padding: '0.2em 0.4em' }
+                        }, 'Markdown')
+                      )
+                    )
+                  ))
                 )
               )
             )
@@ -931,6 +760,7 @@
               ref: fileInputRef,
               type: 'file',
               multiple: true,
+              accept: 'image/*',
               onChange: handleFileChange,
               style: { display: 'none' }
             }),
