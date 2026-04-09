@@ -1084,7 +1084,13 @@
           // 侧边栏图片列表
           React.createElement('div', { className: 'sidebar' },
             React.createElement('div', { className: 'sidebar-header' },
-              React.createElement('h2', { style: { fontSize: '1.2rem', margin: '0' } }, '多媒体列表'),
+              React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                React.createElement('h2', { style: { fontSize: '1.2rem', margin: '0' } }, '多媒体列表'),
+                React.createElement('a', {
+                  href: 'upload.html',
+                  style: { fontSize: '0.85rem', padding: '0.3rem 0.6rem' }
+                }, '文件上传')
+              ),
               React.createElement('div', { style: { display: 'flex', gap: '0.5rem', marginTop: '1rem' } },
                 React.createElement('button', {
                   className: `view-button ${viewMode === 'list' ? 'active' : ''}`,
