@@ -877,7 +877,7 @@
         // 从服务器加载图片
         const loadImages = async () => {
           try {
-            const response = await fetch('http://localhost:3001/images');
+            const response = await fetch('/images');
             if (!response.ok) {
               throw new Error('Failed to fetch images');
             }
@@ -943,7 +943,7 @@
               formData.append('file', file);
               
               try {
-                const response = await fetch('http://localhost:3001/upload', {
+                const response = await fetch('/upload', {
                   method: 'POST',
                   body: formData
                 });
@@ -1059,7 +1059,7 @@
           
           try {
             const encodedName = encodeURIComponent(imageName);
-            const response = await fetch(`http://localhost:3001/images/${encodedName}`, {
+            const response = await fetch(`/images/${encodedName}`, {
               method: 'DELETE'
             });
             

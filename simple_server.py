@@ -1,9 +1,9 @@
 import http.server
 import socketserver
 import os
-import cgi
 import json
-from urllib.parse import urlparse, parse_qs
+import uuid
+from urllib.parse import urlparse
 
 PORT = 8000
 UPLOAD_DIR = 'uploads'
@@ -21,7 +21,7 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if os.path.isfile(os.path.join(UPLOAD_DIR, filename)):
                     images.append({
                         'name': filename,
-                        'url': f'http://localhost:{PORT}/{UPLOAD_DIR}/{filename}'
+                        'url': f'/{UPLOAD_DIR}/{filename}'
                     })
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -36,40 +36,44 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/upload':
             # 处理文件上传
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={'REQUEST_METHOD': 'POST'}
-            )
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
             
-            if 'file' in form:
-                fileitem = form['file']
-                if fileitem.file:
-                    # 保存文件
-                    filename = fileitem.filename
-                    if filename:
-                        # 生成唯一文件名
-                        import time
-                        import random
-                        unique_suffix = str(int(time.time())) + '_' + str(random.randint(1, 10000))
-                        name, ext = os.path.splitext(filename)
-                        new_filename = f'image_{unique_suffix}{ext}'
-                        filepath = os.path.join(UPLOAD_DIR, new_filename)
-                        
-                        with open(filepath, 'wb') as f:
-                            f.write(fileitem.file.read())
-                        
-                        # 返回响应
-                        self.send_response(200)
-                        self.send_header('Content-type', 'application/json')
-                        self.send_header('Access-Control-Allow-Origin', '*')
-                        self.end_headers()
-                        response = {
-                            'url': f'http://localhost:{PORT}/{UPLOAD_DIR}/{new_filename}',
-                            'name': new_filename
-                        }
-                        self.wfile.write(json.dumps(response).encode())
-                        return
+            # 解析multipart/form-data
+            boundary = self.headers['Content-Type'].split('boundary=')[1].encode()
+            parts = post_data.split(boundary)
+            
+            for part in parts:
+                if b'Content-Disposition' in part:
+                    # 查找文件名
+                    content_disposition = part.split(b'\r\n')[1]
+                    if b'filename="' in content_disposition:
+                        filename = content_disposition.split(b'filename="')[1].split(b'"')[0].decode()
+                        if filename:
+                            # 生成唯一文件名
+                            unique_id = str(uuid.uuid4())
+                            name, ext = os.path.splitext(filename)
+                            new_filename = f'image_{unique_id}{ext}'
+                            filepath = os.path.join(UPLOAD_DIR, new_filename)
+                            
+                            # 提取文件内容
+                            file_content = part.split(b'\r\n\r\n')[1].split(b'\r\n--')[0]
+                            
+                            # 保存文件
+                            with open(filepath, 'wb') as f:
+                                f.write(file_content)
+                            
+                            # 返回响应
+                            self.send_response(200)
+                            self.send_header('Content-type', 'application/json')
+                            self.send_header('Access-Control-Allow-Origin', '*')
+                            self.end_headers()
+                            response = {
+                                'url': f'/{UPLOAD_DIR}/{new_filename}',
+                                'name': new_filename
+                            }
+                            self.wfile.write(json.dumps(response).encode())
+                            return
             
             # 上传失败
             self.send_response(400)

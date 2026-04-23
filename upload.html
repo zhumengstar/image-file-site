@@ -862,7 +862,7 @@
         // 加载文件列表
         const loadFiles = async () => {
           try {
-            const response = await fetch('http://localhost:3001/files');
+            const response = await fetch('/files');
             if (!response.ok) {
               throw new Error('Failed to fetch files');
             }
@@ -886,7 +886,7 @@
           
           try {
             // 使用预览 API
-            const response = await fetch(`http://localhost:3001/preview/${encodeURIComponent(file.name)}`);
+            const response = await fetch(`/preview/${encodeURIComponent(file.name)}`);
             if (!response.ok) {
               throw new Error('预览请求失败');
             }
@@ -916,7 +916,7 @@
           
           try {
             const encodedName = encodeURIComponent(fileName);
-            const response = await fetch(`http://localhost:3001/files/${encodedName}`, {
+            const response = await fetch(`/files/${encodedName}`, {
               method: 'DELETE'
             });
             
@@ -954,7 +954,7 @@
             formData.append('file', file);
             
             try {
-              const response = await fetch('http://localhost:3001/upload', {
+              const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
               });

@@ -4,7 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 8000;
+const baseUrl = `http://localhost:${port}`;
 
 // 预览功能依赖
 let mammoth, XLSX;
@@ -118,7 +119,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
   nameMap[req.file.filename] = originalName;
   saveNameMap(nameMap);
   
-  const url = `http://localhost:3001/uploads/${req.file.filename}`;
+  const url = `${baseUrl}/uploads/${req.file.filename}`;
   
   // 设置响应头确保 UTF-8 编码
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -154,7 +155,7 @@ app.get('/images', (req, res) => {
         fs.stat(path.join(uploadDir, file), (err, stats) => {
           resolve({
             name: file,
-            url: `http://localhost:3001/uploads/${file}`,
+            url: `${baseUrl}/uploads/${file}`,
             type: getMimeType(file),
             originalName: nameMap[file] || file,
             mtime: stats ? stats.mtime.getTime() : 0
@@ -231,7 +232,7 @@ app.get('/files', (req, res) => {
           resolve({
             name: file,
             originalName: nameMap[file] || file,
-            url: `http://localhost:3001/uploads/${file}`,
+            url: `${baseUrl}/uploads/${file}`,
             type: getMimeType(file),
             mtime: stats ? stats.mtime.getTime() : 0
           });
@@ -307,7 +308,7 @@ app.get('/preview/:filename', async (req, res) => {
         name: originalName,
         size: fileSizeKB,
         message: 'PDF 文件，请下载后查看',
-        url: `http://localhost:3001/uploads/${filename}`
+        url: `${baseUrl}/uploads/${filename}`
       });
       return;
     }
@@ -377,7 +378,7 @@ app.get('/preview/:filename', async (req, res) => {
         type: 'image',
         name: originalName,
         size: fileSizeKB,
-        url: `http://localhost:3001/uploads/${filename}`
+        url: `${baseUrl}/uploads/${filename}`
       });
       return;
     }

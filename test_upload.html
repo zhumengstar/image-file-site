@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .upload-container:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #images {
+            margin-top: 30px;
+        }
+        .image-item {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>上传测试页面</h1>
+    
+    <div class="upload-container">
+        <input type="file" id="fileInput" accept="image/*,video/*">
+        <button onclick="uploadFile()">上传文件</button>
+    </div>
+    
+    <div id="result"></div>
+    
+    <div id="images">
+        <h2>已上传的图片</h2>
+        <button onclick="loadImages()">刷新列表</button>
+        <div id="imageList"></div>
+    </div>
+    
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+            
+            if (fileInput.files.length === 0) {
+                showResult('请选择文件！', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            console.log('Uploading file:', file.name, file.type, file.size);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Upload response:', data);
+                showResult(`上传成功！URL: ${data.url}`, 'success');
+                loadImages();
+            } catch (error) {
+                console.error('Upload error:', error);
+                showResult(`上传失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadImages() {
+            try {
+                const response = await fetch('/images');
+                const data = await response.json();
+                console.log('Loaded images:', data);
+                
+                const imageListDiv = document.getElementById('imageList');
+                imageListDiv.innerHTML = '';
+                
+                data.forEach(image => {
+                    const div = document.createElement('div');
+                    div.className = 'image-item';
+                    div.innerHTML = `
+                        <strong>${image.name}</strong><br>
+                        <a href="${image.url}" target="_blank">${image.url}</a>
+                    `;
+                    imageListDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Load images error:', error);
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = type;
+            resultDiv.style.display = 'block';
+        }
+        
+        // 页面加载时获取图片列表
+        loadImages();
+    </script>
+</body>
+</html>

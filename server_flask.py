@@ -4,6 +4,7 @@ import uuid
 
 app = Flask(__name__)
 UPLOAD_DIR = 'uploads'
+PORT = 8000
 
 # 确保上传目录存在
 if not os.path.exists(UPLOAD_DIR):
@@ -32,17 +33,17 @@ def get_images():
         if os.path.isfile(os.path.join(UPLOAD_DIR, filename)):
             images.append({
                 'name': filename,
-                'url': f'http://localhost:8000/{UPLOAD_DIR}/{filename}'
+                'url': f'http://localhost:{PORT}/{UPLOAD_DIR}/{filename}'
             })
     return jsonify(images)
 
 # 上传图片
 @app.route('/upload', methods=['POST'])
 def upload_image():
-    if 'image' not in request.files:
+    if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
-    file = request.files['image']
+    file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
@@ -55,9 +56,9 @@ def upload_image():
     file.save(filepath)
     
     return jsonify({
-        'url': f'http://localhost:8000/{UPLOAD_DIR}/{new_filename}',
+        'url': f'http://localhost:{PORT}/{UPLOAD_DIR}/{new_filename}',
         'name': new_filename
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=PORT, debug=True)
