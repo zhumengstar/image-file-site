@@ -867,7 +867,18 @@
               throw new Error('Failed to fetch files');
             }
             const data = await response.json();
-            setFileList(data);
+            // 过滤掉图片文件，只展示非图片文件
+            const nonImageFiles = data.filter(file => {
+              const fileName = file.name.toLowerCase();
+              return !fileName.endsWith('.png') && 
+                     !fileName.endsWith('.jpg') && 
+                     !fileName.endsWith('.jpeg') && 
+                     !fileName.endsWith('.gif') && 
+                     !fileName.endsWith('.webp') &&
+                     !fileName.endsWith('.bmp') &&
+                     !fileName.endsWith('.svg');
+            });
+            setFileList(nonImageFiles);
           } catch (error) {
             console.error('Failed to load files:', error);
           }
@@ -1030,7 +1041,8 @@
 
         // 复制链接
         const copyUrl = (url) => {
-          navigator.clipboard.writeText(url)
+          const fullUrl = url.startsWith('http') ? url : `${window.location.protocol}//${window.location.host}${url}`;
+          navigator.clipboard.writeText(fullUrl)
             .then(() => {
               showMessage('链接已复制到剪贴板！', 'success');
             })
@@ -1038,6 +1050,123 @@
               showMessage('复制失败，请手动复制！', 'error');
             });
         };
+
+        // 获取文件类型图标
+        const getFileIcon = (fileName) => {
+          const extension = fileName.toLowerCase().split('.').pop();
+          
+          switch (extension) {
+            case 'pdf':
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+                React.createElement('polyline', { points: '14 2 14 8 20 8' }),
+                React.createElement('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
+                React.createElement('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
+                React.createElement('polyline', { points: '10 9 9 9 8 9' })
+              );
+            case 'doc':
+            case 'docx':
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+                React.createElement('polyline', { points: '14 2 14 8 20 8' }),
+                React.createElement('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
+                React.createElement('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
+                React.createElement('polyline', { points: '10 9 9 9 8 9' }),
+                React.createElement('line', { x1: '12', y1: '22', x2: '12', y2: '22' })
+              );
+            case 'xlsx':
+            case 'xls':
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+                React.createElement('polyline', { points: '14 2 14 8 20 8' }),
+                React.createElement('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
+                React.createElement('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
+                React.createElement('line', { x1: '10', y1: '9', x2: '8', y2: '9' }),
+                React.createElement('line', { x1: '14', y1: '9', x2: '12', y2: '9' })
+              );
+            case 'pptx':
+            case 'ppt':
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+                React.createElement('polyline', { points: '14 2 14 8 20 8' }),
+                React.createElement('rect', { x: '8', y: '12', width: '8', height: '4' }),
+                React.createElement('rect', { x: '8', y: '17', width: '8', height: '2' })
+              );
+            case 'txt':
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+                React.createElement('polyline', { points: '14 2 14 8 20 8' }),
+                React.createElement('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
+                React.createElement('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
+                React.createElement('line', { x1: '10', y1: '9', x2: '8', y2: '9' })
+              );
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+            case 'webp':
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('rect', { x: '3', y: '3', width: '18', height: '18', rx: '2', ry: '2' }),
+                React.createElement('circle', { cx: '8.5', cy: '8.5', r: '1.5' }),
+                React.createElement('polyline', { points: '21 15 16 10 5 21' })
+              );
+            default:
+              return React.createElement('svg', {
+                width: '28',
+                height: '28',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                strokeWidth: '2'
+              },
+                React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+                React.createElement('polyline', { points: '14 2 14 8 20 8' })
+              );
+          }
+        };
+
 
         return React.createElement('div', { id: 'root' },
           // 消息提示
@@ -1069,17 +1198,7 @@
                       onClick: () => copyUrl(file.url)
                     },
                       React.createElement('div', { className: 'file-list-item-icon' },
-                        React.createElement('svg', {
-                          width: '28',
-                          height: '28',
-                          viewBox: '0 0 24 24',
-                          fill: 'none',
-                          stroke: 'currentColor',
-                          strokeWidth: '2'
-                        },
-                          React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
-                          React.createElement('polyline', { points: '14 2 14 8 20 8' })
-                        )
+                        getFileIcon(file.name)
                       ),
                       React.createElement('div', { className: 'item-content' },
                         React.createElement('div', { 

@@ -22,18 +22,24 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         print(f"[GET] {self.path}")
         if self.path == '/images':
             images = []
+            image_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+            video_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm']
             for filename in os.listdir(UPLOAD_DIR):
                 if os.path.isfile(os.path.join(UPLOAD_DIR, filename)):
-                    images.append({
-                        'name': filename,
-                        'url': f'/{UPLOAD_DIR}/{filename}'
-                    })
+                    ext = os.path.splitext(filename)[1].lower()
+                    if ext in image_extensions or ext in video_extensions:
+                        file_type = 'image' if ext in image_extensions else 'video'
+                        images.append({
+                            'name': filename,
+                            'url': f'/{UPLOAD_DIR}/{filename}',
+                            'type': f'{file_type}/{ext[1:]}'
+                        })
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps(images).encode())
-            print(f"[GET /images] Returning {len(images)} images")
+            print(f"[GET /images] Returning {len(images)} images/videos")
         elif self.path == '/files':
             files = []
             for filename in os.listdir(UPLOAD_DIR):
@@ -59,12 +65,59 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
-                response = {
-                    'type': 'text',
-                    'name': filename,
-                    'url': f'/{UPLOAD_DIR}/{filename}',
-                    'size': os.path.getsize(filepath) // 1024
-                }
+                
+                # 根据文件扩展名判断文件类型
+                ext = os.path.splitext(filename)[1].lower()
+                
+                if ext == '.pdf':
+                    response = {
+                        'type': 'pdf',
+                        'name': filename,
+                        'url': f'/{UPLOAD_DIR}/{filename}',
+                        'size': os.path.getsize(filepath) // 1024
+                    }
+                elif ext in ['.doc', '.docx']:
+                    response = {
+                        'type': 'docx',
+                        'name': filename,
+                        'url': f'/{UPLOAD_DIR}/{filename}',
+                        'size': os.path.getsize(filepath) // 1024,
+                        'content': 'Word文档内容预览（仅支持基本文本）'
+                    }
+                elif ext in ['.xls', '.xlsx']:
+                    response = {
+                        'type': 'excel',
+                        'name': filename,
+                        'url': f'/{UPLOAD_DIR}/{filename}',
+                        'size': os.path.getsize(filepath) // 1024,
+                        'sheetCount': 1,
+                        'sheets': [{
+                            'name': 'Sheet1',
+                            'rows': [[f'Cell {i+1},{j+1}' for j in range(5)] for i in range(3)]
+                        }]
+                    }
+                elif ext in ['.txt', '.md', '.json', '.xml', '.html', '.css', '.js', '.csv']:
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                    except UnicodeDecodeError:
+                        content = '无法读取文件内容（非文本文件）'
+                    response = {
+                        'type': 'text',
+                        'name': filename,
+                        'url': f'/{UPLOAD_DIR}/{filename}',
+                        'size': os.path.getsize(filepath) // 1024,
+                        'content': content
+                    }
+                else:
+                    response = {
+                        'type': 'unsupported',
+                        'name': filename,
+                        'url': f'/{UPLOAD_DIR}/{filename}',
+                        'size': os.path.getsize(filepath) // 1024,
+                        'message': '暂不支持此文件类型的预览'
+                    }
+                
                 self.wfile.write(json.dumps(response).encode())
                 print(f"[GET /preview/{filename}] Success")
             else:
