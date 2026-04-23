@@ -161,10 +161,17 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                                     file_data = part[headers_end + 4:]
                                     print(f"[POST /upload] File data size: {len(file_data)} bytes")
                                     
-                                    unique_id = str(uuid.uuid4())
+                                    # 使用原始文件名，添加数字后缀以避免冲突
                                     name, ext = os.path.splitext(filename)
-                                    new_filename = f'image_{unique_id}{ext}'
+                                    new_filename = filename
                                     filepath = os.path.join(UPLOAD_DIR, new_filename)
+                                    
+                                    # 如果文件已存在，添加数字后缀
+                                    counter = 1
+                                    while os.path.exists(filepath):
+                                        new_filename = f'{name}_{counter}{ext}'
+                                        filepath = os.path.join(UPLOAD_DIR, new_filename)
+                                        counter += 1
                                     
                                     with open(filepath, 'wb') as f:
                                         f.write(file_data)
